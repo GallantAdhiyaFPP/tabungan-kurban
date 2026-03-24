@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabungan Kurban Jamaah</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap');
+        :root {
+            --tw-color-emerald-500: #10b981;
+        }
+        * {
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        }
+        .nav-link {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-link.active {
+            color: #10b981;
+            border-bottom: 3px solid #10b981;
+        }
+        .card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgb(16 185 129 / 0.1), 0 8px 10px -6px rgb(16 185 129 / 0.1);
+        }
+        .section {
+            animation: fadeIn 0.3s ease forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal {
+            animation: modalPop 0.3s ease forwards;
+        }
+        @keyframes modalPop {
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .toast {
+            animation: toastIn 0.3s ease forwards;
+        }
+    </style>
+</head>
+<body class="bg-emerald-50 text-slate-800">
+    <!-- NAVBAR -->
+    <nav class="bg-white border-b border-emerald-100 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-x-3">
+                    <div class="w-9 h-9 bg-emerald-600 text-white rounded-2xl flex items-center justify-center text-2xl shadow-inner">🌿</div>
+                    <h1 class="text-2xl font-semibold tracking-[-0.5px] text-emerald-700">Tabungan Kurban</h1>
+                </div>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center gap-x-8 text-sm font-medium">
+                    <a onclick="switchPage('dashboard')" id="nav-dashboard" class="nav-link active flex items-center gap-x-1.5 text-slate-700 hover:text-emerald-600">
+                        📊
+                        <span>Dashboard</span>
+                    </a>
+                    <a onclick="switchPage('jamaah')" id="nav-jamaah" class="nav-link flex items-center gap-x-1.5 text-slate-700 hover:text-emerald-600">
+                        👥
+                        <span>Data Jamaah</span>
+                    </a>
+                    <a onclick="switchPage('tabungan')" id="nav-tabungan" class="nav-link flex items-center gap-x-1.5 text-slate-700 hover:text-emerald-600">
+                        💰
+                        <span>Tabungan</span>
+                    </a>
+                    <a onclick="switchPage('riwayat')" id="nav-riwayat" class="nav-link flex items-center gap-x-1.5 text-slate-700 hover:text-emerald-600">
+                        📜
+                        <span>Riwayat</span>
+                    </a>
+                </div>
+
+                <!-- Mobile Hamburger -->
+                <button onclick="toggleMobileMenu()" id="hamburger" class="md:hidden w-10 h-10 flex items-center justify-center text-3xl text-emerald-700 hover:bg-emerald-100 rounded-2xl transition">
+                    ☰
+                </button>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="hidden md:hidden bg-white border-t py-4 px-2 flex flex-col gap-y-2 text-sm font-medium shadow-inner">
+                <a onclick="switchPage('dashboard');toggleMobileMenu()" class="flex items-center gap-x-3 px-4 py-3 hover:bg-emerald-50 rounded-2xl">
+                    📊 Dashboard
+                </a>
+                <a onclick="switchPage('jamaah');toggleMobileMenu()" class="flex items-center gap-x-3 px-4 py-3 hover:bg-emerald-50 rounded-2xl">
+                    👥 Data Jamaah
+                </a>
+                <a onclick="switchPage('tabungan');toggleMobileMenu()" class="flex items-center gap-x-3 px-4 py-3 hover:bg-emerald-50 rounded-2xl">
+                    💰 Tabungan
+                </a>
+                <a onclick="switchPage('riwayat');toggleMobileMenu()" class="flex items-center gap-x-3 px-4 py-3 hover:bg-emerald-50 rounded-2xl">
+                    📜 Riwayat Transaksi
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- DASHBOARD PAGE -->
+        <div id="dashboard-page" class="section">
+            <div class="flex justify-between items-end mb-8">
+                <div>
+                    <h2 class="text-3xl font-semibold text-emerald-800">Selamat datang kembali 👋</h2>
+                    <p class="text-slate-500 mt-1">Ringkasan tabungan kurban jamaah hari ini</p>
+                </div>
+                <div id="last-updated" class="text-xs text-slate-400 flex items-center gap-x-1"></div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Total Saldo -->
+                <div class="card bg-white rounded-3xl p-7 shadow-sm border border-emerald-100">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">TOTAL SALDO</p>
+                            <p id="total-saldo" class="text-4xl font-semibold text-emerald-700 mt-2">Rp 0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-4xl">💰</div>
+                    </div>
+                    <p id="total-saldo-change" class="text-emerald-500 text-sm mt-6 flex items-center gap-x-1">📈 Semua jamaah</p>
+                </div>
+
+                <!-- Jumlah Jamaah -->
+                <div class="card bg-white rounded-3xl p-7 shadow-sm border border-emerald-100">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">JUMLAH JAMAAH</p>
+                            <p id="jumlah-jamaah" class="text-4xl font-semibold text-emerald-700 mt-2">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-4xl">👥</div>
+                    </div>
+                    <p class="text-slate-500 text-sm mt-6">Anggota aktif</p>
+                </div>
+
+                <!-- Tabungan Bulan Ini -->
+                <div class="card bg-white rounded-3xl p-7 shadow-sm border border-emerald-100">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">TABUNGAN BULAN INI</p>
+                            <p id="tabungan-bulan" class="text-4xl font-semibold text-emerald-700 mt-2">Rp 0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-4xl">📅</div>
+                    </div>
+                    <p class="text-emerald-500 text-sm mt-6 flex items-center gap-x-1">🔥 Sedang berjalan</p>
+                </div>
+            </div>
+
+            <!-- Progress Jamaah -->
+            <div class="mt-10">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-lg">Progress Tabungan Jamaah</h3>
+                    <a onclick="switchPage('jamaah')" class="text-emerald-600 text-sm flex items-center gap-x-1 hover:underline">Lihat semua →</a>
+                </div>
+                <div id="progress-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- JS populated -->
+                </div>
+            </div>
+
+            <!-- Transaksi Terbaru -->
+            <div class="mt-10">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-lg">5 Transaksi Terbaru</h3>
+                    <a onclick="switchPage('riwayat')" class="text-emerald-600 text-sm flex items-center gap-x-1 hover:underline">Riwayat lengkap →</a>
+                </div>
+                <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-emerald-100">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-emerald-100">
+                                <th class="text-left py-5 px-8 text-slate-500 text-sm font-medium">Tanggal</th>
+                                <th class="text-left py-5 px-8 text-slate-500 text-sm font-medium">Jamaah</th>
+                                <th class="text-right py-5 px-8 text-slate-500 text-sm font-medium">Jumlah</th>
+                                <th class="text-left py-5 px-8 text-slate-500 text-sm font-medium">Catatan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-table" class="divide-y divide-emerald-100 text-sm">
+                            <!-- JS populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- DATA JAMAAH PAGE -->
+        <div id="jamaah-page" class="section hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div class="flex-1">
+                    <h2 class="text-3xl font-semibold text-emerald-800">Data Jamaah</h2>
+                    <p class="text-slate-500">Kelola daftar jamaah dan target kurban</p>
+                </div>
+                <div class="flex gap-3">
+                    <div class="relative flex-1 md:w-80">
+                        <input id="search-jamaah" 
+                               onkeyup="if(event.key==='Enter') filterJamaah()"
+                               type="text" 
+                               placeholder="Cari nama atau nomor HP..." 
+                               class="w-full bg-white border border-emerald-200 focus:border-emerald-500 rounded-3xl py-4 px-6 text-sm outline-none">
+                        <span class="absolute right-6 top-1/2 -translate-y-1/2 text-emerald-400">🔎</span>
+                    </div>
+                    <button onclick="showAddJamaahModal()" 
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-8 rounded-3xl flex items-center gap-x-2 transition">
+                        <span class="text-xl leading-none">+</span>
+                        Tambah Jamaah
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-emerald-100 overflow-hidden">
+                <table class="w-full min-w-full">
+                    <thead>
+                        <tr class="bg-emerald-50">
+                            <th class="py-6 px-8 text-left text-xs font-semibold text-emerald-700 uppercase tracking-widest">Nama</th>
+                            <th class="py-6 px-8 text-left text-xs font-semibold text-emerald-700 uppercase tracking-widest">No. HP</th>
+                            <th class="py-6 px-8 text-right text-xs font-semibold text-emerald-700 uppercase tracking-widest">Target</th>
+                            <th class="py-6 px-8 text-right text-xs font-semibold text-emerald-700 uppercase tracking-widest">Saldo</th>
+                            <th class="py-6 px-8 text-center text-xs font-semibold text-emerald-700 uppercase tracking-widest">Progress</th>
+                            <th class="py-6 px-8 w-32"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="jamaah-table" class="divide-y text-sm">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TABUNGAN PAGE -->
+        <div id="tabungan-page" class="section hidden">
+            <div class="max-w-2xl mx-auto bg-white rounded-3xl shadow-sm p-8 border border-emerald-100">
+                <h2 class="text-3xl font-semibold text-emerald-800 mb-1">Tambah Tabungan</h2>
+                <p class="text-slate-500 mb-8">Catat setoran baru untuk jamaah</p>
+
+                <form id="tabungan-form" onsubmit="handleTabunganSubmit(event)">
+                    <div class="space-y-8">
+                        <!-- Pilih Jamaah -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-2">Pilih Jamaah</label>
+                            <select id="select-jamaah" 
+                                    onchange="updateJamaahInfo()"
+                                    class="w-full border border-emerald-200 focus:border-emerald-500 rounded-3xl py-4 px-6 text-base outline-none bg-white">
+                                <option value="">— Pilih jamaah —</option>
+                            </select>
+                        </div>
+
+                        <!-- Info Jamaah -->
+                        <div id="jamaah-info" class="hidden bg-emerald-50 rounded-3xl p-5 grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-slate-500">Saldo saat ini</span>
+                                <p id="info-saldo" class="font-semibold text-emerald-700 text-2xl">Rp 0</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500">Progress</span>
+                                <div class="flex items-center gap-x-3">
+                                    <div class="flex-1 h-3 bg-white rounded-3xl overflow-hidden">
+                                        <div id="info-progress-bar" class="h-full bg-emerald-500 rounded-3xl w-0 transition-all"></div>
+                                    </div>
+                                    <span id="info-progress-text" class="font-medium text-emerald-700">0%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-6">
+                            <!-- Tanggal -->
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 mb-2">Tanggal</label>
+                                <input id="tanggal" type="date" 
+                                       class="w-full border border-emerald-200 focus:border-emerald-500 rounded-3xl py-4 px-6 outline-none">
+                            </div>
+                            <!-- Jumlah -->
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 mb-2">Jumlah Tabungan (Rp)</label>
+                                <input id="jumlah" type="text" 
+                                       oninput="this.value = this.value.replace(/[^0-9]/g,'')"
+                                       class="w-full border border-emerald-200 focus:border-emerald-500 rounded-3xl py-4 px-6 outline-none text-right text-lg font-medium">
+                            </div>
+                        </div>
+
+                        <!-- Catatan -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-2">Catatan (opsional)</label>
+                            <textarea id="catatan" rows="3"
+                                      class="w-full border border-emerald-200 focus:border-emerald-500 rounded-3xl py-4 px-6 outline-none resize-none"></textarea>
+                        </div>
+
+                        <button type="submit"
+                                class="w-full bg-emerald-600 hover:bg-emerald-700 py-5 text-white font-semibold rounded-3xl flex items-center justify-center gap-x-2 transition text-lg">
+                            💰 Simpan Tabungan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- RIWAYAT PAGE -->
+        <div id="riwayat-page" class="section hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div>
+                    <h2 class="text-3xl font-semibold text-emerald-800">Riwayat Transaksi</h2>
+                    <p class="text-slate-500">Semua setoran yang pernah dilakukan</p>
+                </div>
+                <div class="relative flex-1 md:w-96">
+                    <input id="search-riwayat" 
+                           onkeyup="if(event.key==='Enter') filterRiwayat()"
+                           type="text" 
+                           placeholder="Cari nama jamaah atau catatan..." 
+                           class="w-full bg-white border border-emerald-200 focus:border-emerald-500 rounded-3xl py-4 px-6 text-sm outline-none">
+                    <span class="absolute right-6 top-1/2 -translate-y-1/2 text-emerald-400">🔎</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-emerald-100 overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-emerald-50">
+                            <th class="py-6 px-8 text-left text-xs font-semibold text-emerald-700 uppercase tracking-widest">Tanggal</th>
+                            <th class="py-6 px-8 text-left text-xs font-semibold text-emerald-700 uppercase tracking-widest">Jamaah</th>
+                            <th class="py-6 px-8 text-right text-xs font-semibold text-emerald-700 uppercase tracking-widest">Jumlah</th>
+                            <th class="py-6 px-8 text-left text-xs font-semibold text-emerald-700 uppercase tracking-widest">Catatan</th>
+                            <th class="py-6 px-8 w-16"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="riwayat-table" class="divide-y text-sm">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH / EDIT JAMAAH -->
+    <div onclick="if(event.target.id==='jamaah-modal')hideJamaahModal()" 
+         id="jamaah-modal"
+         class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="modal bg-white w-full max-w-lg mx-4 rounded-3xl p-8 shadow-2xl">
+            <h3 id="modal-title" class="text-2xl font-semibold mb-6">Tambah Jamaah Baru</h3>
+            
+            <form id="jamaah-form" onsubmit="handleJamaahForm(event)">
+                <input type="hidden" id="edit-id">
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-slate-600">Nama Lengkap</label>
+                        <input id="nama" type="text" required
+                               class="w-full rounded-3xl border border-emerald-200 focus:border-emerald-500 px-6 py-4 outline-none">
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-slate-600">Nomor HP</label>
+                        <input id="nohp" type="tel" required
+                               class="w-full rounded-3xl border border-emerald-200 focus:border-emerald-500 px-6 py-4 outline-none">
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-slate-600">Target Kurban (Rp)</label>
+                        <input id="target" type="text" required
+                               oninput="this.value = this.value.replace(/[^0-9]/g,'')"
+                               class="w-full rounded-3xl border border-emerald-200 focus:border-emerald-500 px-6 py-4 outline-none text-right">
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-10">
+                    <button type="button" onclick="hideJamaahModal()"
+                            class="flex-1 py-4 text-slate-600 font-medium border border-slate-200 rounded-3xl hover:bg-slate-100">
+                        Batal
+                    </button>
+                    <button type="submit"
+                            class="flex-1 py-4 bg-emerald-600 text-white font-medium rounded-3xl hover:bg-emerald-700">
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[10000] flex flex-col gap-y-2"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
