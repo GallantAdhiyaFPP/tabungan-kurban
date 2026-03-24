@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tabungan Kurban Jamaah</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            emerald: {
+              50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0',
+              300: '#6ee7b7', 400: '#34d399', 500: '#10b981',
+              600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b'
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            arabic: ['Amiri', 'serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background: #f0fdf4; min-height: 100vh; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 99px; }
+
+    /* Nav */
+    .nav-link { transition: all 0.2s; position: relative; }
+    .nav-link.active { color: #10b981; font-weight: 600; }
+    .nav-link.active::after {
+      content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
+      height: 2px; background: #10b981; border-radius: 99px;
+    }
+
+    /* Page sections */
+    .page { display: none; }
+    .page.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Cards */
+    .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(16,185,129,0.15); }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981, #059669);
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-danger { transition: all 0.2s; }
+    .btn-danger:hover { background: #fee2e2; color: #dc2626; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 50;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+    .modal-box { animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Table row hover */
+    tbody tr { transition: background 0.15s; }
+    tbody tr:hover { background: #f0fdf4; }
+
+    /* Progress bar */
+    .progress-bar { transition: width 0.6s ease; }
+
+    /* Hamburger */
+    .hamburger-line { transition: all 0.3s; }
+    #mobile-menu { transition: all 0.3s; }
+
+    /* Badge */
+    .badge-success { background: #d1fae5; color: #065f46; }
+    .badge-warning { background: #fef3c7; color: #92400e; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 100;
+      transform: translateY(100px); opacity: 0; transition: all 0.3s;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+
+    /* Decorative */
+    .hero-bg {
+      background: linear-gradient(135deg, #065f46 0%, #047857 40%, #059669 100%);
+    }
+    .islamic-pattern {
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M30 0l8.66 5v10L30 20l-8.66-5V5L30 0zm0 40l8.66 5v10L30 60l-8.66-5V45L30 40z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    @media (max-width: 640px) {
+      .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    }
+  </style>
+</head>
+<body class="bg-emerald-50 text-gray-800">
+
+  <!-- Navbar -->
+  <nav class="hero-bg islamic-pattern sticky top-0 z-40 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center text-xl">🐑</div>
+          <div>
+            <div class="text-white font-bold text-base leading-tight">Tabungan Kurban</div>
+            <div class="text-emerald-200 text-xs">Jamaah Management</div>
+          </div>
+        </div>
+
+        <!-- Desktop Nav -->
+        <div class="hidden md:flex items-center gap-1">
+          <button onclick="showPage('dashboard')" class="nav-link active text-white/80 hover:text-white px-4 py-2 rounded-lg text-sm" id="nav-dashboard">Dashboard</button>
+          <button onclick="showPage('jamaah')" class="nav-link text-white/80 hover:text-white px-4 py-2 rounded-lg text-sm" id="nav-jamaah">Jamaah</button>
+          <button onclick="showPage('setoran')" class="nav-link text-white/80 hover:text-white px-4 py-2 rounded-lg text-sm" id="nav-setoran">Setoran</button>
+          <button onclick="showPage('riwayat')" class="nav-link text-white/80 hover:text-white px-4 py-2 rounded-lg text-sm" id="nav-riwayat">Riwayat</button>
+          <button onclick="exportCSV()" class="ml-2 bg-white/15 hover:bg-white/25 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2">
+            <span>⬇️</span> Export CSV
+          </button>
+        </div>
+
+        <!-- Hamburger -->
+        <button id="hamburger" onclick="toggleMobileMenu()" class="md:hidden text-white p-2">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path id="ham-open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            <path id="ham-close" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-white/20">
+      <div class="px-4 py-3 flex flex-col gap-1">
+        <button onclick="showPage('dashboard'); closeMobileMenu()" class="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2.5 rounded-lg text-sm text-left transition-all">📊 Dashboard</button>
+        <button onclick="showPage('jamaah'); closeMobileMenu()" class="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2.5 rounded-lg text-sm text-left transition-all">👥 Data Jamaah</button>
+        <button onclick="showPage('setoran'); closeMobileMenu()" class="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2.5 rounded-lg text-sm text-left transition-all">💰 Setoran</button>
+        <button onclick="showPage('riwayat'); closeMobileMenu()" class="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2.5 rounded-lg text-sm text-left transition-all">📋 Riwayat</button>
+        <button onclick="exportCSV()" class="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2.5 rounded-lg text-sm text-left transition-all">⬇️ Export CSV</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 py-6 pb-16">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="page-dashboard" class="page active">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+        <p class="text-gray-500 text-sm mt-1">Selamat datang di sistem Tabungan Kurban Jamaah</p>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-emerald-100">
+          <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl mb-3">💵</div>
+          <div class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Total Saldo</div>
+          <div id="stat-total-saldo" class="text-lg font-bold text-emerald-700 leading-tight">Rp 0</div>
+        </div>
+        <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-emerald-100">
+          <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl mb-3">👥</div>
+          <div class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Jamaah</div>
+          <div id="stat-jamaah" class="text-lg font-bold text-blue-700 leading-tight">0 Orang</div>
+        </div>
+        <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-emerald-100">
+          <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-xl mb-3">📅</div>
+          <div class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Setoran Bulan Ini</div>
+          <div id="stat-bulan-ini" class="text-lg font-bold text-amber-700 leading-tight">Rp 0</div>
+        </div>
+        <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-emerald-100">
+          <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-xl mb-3">📈</div>
+          <div class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Total Transaksi</div>
+          <div id="stat-total-tx" class="text-lg font-bold text-purple-700 leading-tight">0 Tx</div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions & Top Jamaah -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Transactions -->
+        <div class="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
+          <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="font-bold text-gray-800">5 Transaksi Terbaru</h2>
+            <button onclick="showPage('riwayat')" class="text-emerald-600 text-xs font-medium hover:underline">Lihat Semua →</button>
+          </div>
+          <div id="recent-tx-list" class="divide-y divide-gray-50">
+            <div class="p-5 text-center text-gray-400 text-sm">Memuat data...</div>
+          </div>
+        </div>
+
+        <!-- Jamaah Progress -->
+        <div class="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
+          <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="font-bold text-gray-800">Progress Tabungan</h2>
+            <button onclick="showPage('jamaah')" class="text-emerald-600 text-xs font-medium hover:underline">Kelola →</button>
+          </div>
+          <div id="progress-list" class="p-4 space-y-4 max-h-80 overflow-y-auto">
+            <div class="text-center text-gray-400 text-sm p-4">Memuat data...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== JAMAAH ===== -->
+    <div id="page-jamaah" class="page">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Data Jamaah</h1>
+          <p class="text-gray-500 text-sm mt-1">Kelola daftar jamaah peserta kurban</p>
+        </div>
+        <button onclick="openAddJamaah()" class="btn-primary text-white px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 w-full sm:w-auto justify-center">
+          <span class="text-lg">+</span> Tambah Jamaah
+        </button>
+      </div>
+
+      <!-- Search -->
+      <div class="mb-4 relative">
+        <input type="text" id="search-jamaah" oninput="filterJamaah()" placeholder="Cari nama jamaah..."
+          class="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none text-sm transition-all shadow-sm" />
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+      </div>
+
+      <!-- Jamaah Table -->
+      <div class="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
+        <div class="table-scroll">
+          <table class="w-full min-w-[600px]">
+            <thead>
+              <tr class="bg-emerald-50 text-emerald-800 text-xs font-semibold uppercase tracking-wide">
+                <th class="px-5 py-4 text-left">Nama</th>
+                <th class="px-5 py-4 text-left">No HP</th>
+                <th class="px-5 py-4 text-right">Target</th>
+                <th class="px-5 py-4 text-right">Saldo</th>
+                <th class="px-5 py-4 text-center">Progress</th>
+                <th class="px-5 py-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="jamaah-tbody">
+              <tr><td colspan="6" class="text-center text-gray-400 py-10">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SETORAN ===== -->
+    <div id="page-setoran" class="page">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Input Setoran</h1>
+        <p class="text-gray-500 text-sm mt-1">Catat setoran tabungan kurban jamaah</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Form -->
+        <div class="bg-white rounded-2xl shadow-sm border border-emerald-100 p-6">
+          <h2 class="font-bold text-gray-800 mb-5 flex items-center gap-2"><span>💰</span> Form Setoran</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="text-sm font-semibold text-gray-700 block mb-1.5">Pilih Jamaah <span class="text-red-500">*</span></label>
+              <select id="setoran-jamaah" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none text-sm transition-all">
+                <option value="">-- Pilih Jamaah --</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm font-semibold text-gray-700 block mb-1.5">Tanggal Setoran <span class="text-red-500">*</span></label>
+              <input type="date" id="setoran-tanggal" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none text-sm transition-all" />
+            </div>
+            <div>
+              <label class="text-sm font-semibold text-gray-700 block mb-1.5">Jumlah Setoran <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-sm">Rp</span>
+                <input type="number" id="setoran-jumlah" placeholder="0" min="0"
+                  class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none text-sm transition-all" />
+              </div>
+            </div>
+            <div>
+              <label class="text-sm font-semibold text-gray-700 block mb-1.5">Catatan</label>
+              <input type="text" id="setoran-catatan" placeholder="Opsional..."
+                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none text-sm transition-all" />
+            </div>
+            <button onclick="submitSetoran()" class="btn-primary w-full text-white py-3 rounded-xl font-semibold text-sm mt-2">
+              💾 Simpan Setoran
+            </button>
+          </div>
+        </div>
+
+        <!-- Info Card -->
+        <div>
+          <div id="setoran-info-card" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 hidden">
+            <h3 class="font-bold text-emerald-800 mb-4">Info Jamaah Terpilih</h3>
+            <div class="space-y-3">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Nama</span>
+                <span id="info-nama" class="font-semibold text-gray-800"></span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">No HP</span>
+                <span id="info-hp" class="font-semibold text-gray-800"></span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Target</span>
+                <span id="info-target" class="font-semibold text-emerald-700"></span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Saldo Saat Ini</span>
+                <span id="info-saldo" class="font-semibold text-emerald-700"></span>
+              </div>
+              <div class="mt-3">
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-gray-500">Progress</span>
+                  <span id="info-persen" class="font-bold text-emerald-700">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                  <div id="info-progress-bar" class="progress-bar bg-emerald-500 h-2.5 rounded-full" style="width:0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-emerald-100 p-6 mt-4 shadow-sm">
+            <h3 class="font-bold text-gray-800 mb-4">📌 Panduan</h3>
+            <ul class="space-y-2 text-sm text-gray-600">
+              <li class="flex gap-2"><span class="text-emerald-500 font-bold">1.</span> Pilih jamaah dari dropdown</li>
+              <li class="flex gap-2"><span class="text-emerald-500 font-bold">2.</span> Isi tanggal dan jumlah setoran</li>
+              <li class="flex gap-2"><span class="text-emerald-500 font-bold">3.</span> Klik "Simpan Setoran"</li>
+              <li class="flex gap-2"><span class="text-emerald-500 font-bold">4.</span> Saldo jamaah akan otomatis bertambah</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RIWAYAT ===== -->
+    <div id="page-riwayat" class="page">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Riwayat Transaksi</h1>
+          <p class="text-gray-500 text-sm mt-1">Semua catatan setoran jamaah</p>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="mb-4 relative">
+        <input type="text" id="search-riwayat" oninput="filterRiwayat()" placeholder="Cari nama jamaah..."
+          class="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 outline-none text-sm transition-all shadow-sm" />
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+      </div>
+
+      <!-- Riwayat Table -->
+      <div class="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
+        <div class="table-scroll">
+          <table class="w-full min-w-[580px]">
+            <thead>
+              <tr class="bg-emerald-50 text-emerald-800 text-xs font-semibold uppercase tracking-wide">
+                <th class="px-5 py-4 text-left">Tanggal</th>
+                <th class="px-5 py-4 text-left">Jamaah</th>
+                <th class="px-5 py-4 text-right">Jumlah</th>
+                <th class="px-5 py-4 text-left">Catatan</th>
+                <th class="px-5 py-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="riwayat-tbody">
+              <tr><td colspan="5" class="text-center text-gray-400 py-10">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ===== MODAL TAMBAH/EDIT JAMAAH ===== -->
+  <div id="modal-jamaah" class="modal-overlay" onclick="closeModalOutside(event, 'modal-jamaah')">
+    <div class="modal-box bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 mx-4">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="modal-title" class="text-lg font-bold text-gray-800">Tambah Jamaah</h3>
+        <button onclick="closeModal('modal-jamaah')" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 transition-all">✕</button>
+      </div>
+      <div class="space-y-4">
+        <input type="hidden" id="jamaah-id" />
+        <div>
+          <label class="text-sm font-semibold text-gray-700 block mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
+          <input type="text" id="jamaah-nama" placeholder="Masukkan nama..."
+            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none text-sm transition-all" />
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700 block mb-1.5">No HP</label>
+          <input type="text" id="jamaah-hp" placeholder="08xxxxxxxxxx"
+            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none text-sm transition-all" />
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700 block mb-1.5">Target Kurban (Rp) <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-sm">Rp</span>
+            <input type="number" id="jamaah-target" placeholder="0" min="0"
+              class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-400 outline-none text-sm transition-all" />
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeModal('modal-jamaah')" class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-sm text-gray-700 transition-all">Batal</button>
+          <button onclick="saveJamaah()" class="btn-primary flex-1 text-white py-3 rounded-xl font-semibold text-sm">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL KONFIRMASI HAPUS ===== -->
+  <div id="modal-hapus" class="modal-overlay" onclick="closeModalOutside(event, 'modal-hapus')">
+    <div class="modal-box bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 mx-4 text-center">
+      <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">⚠️</div>
+      <h3 class="text-lg font-bold text-gray-800 mb-2">Konfirmasi Hapus</h3>
+      <p id="hapus-message" class="text-gray-500 text-sm mb-6">Yakin ingin menghapus data ini?</p>
+      <div class="flex gap-3">
+        <button onclick="closeModal('modal-hapus')" class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-sm transition-all">Batal</button>
+        <button id="hapus-confirm-btn" class="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm transition-all">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="bg-white rounded-xl shadow-xl border border-gray-100 px-5 py-3 flex items-center gap-3 min-w-[220px]">
+    <span id="toast-icon" class="text-xl">✅</span>
+    <span id="toast-message" class="text-sm font-medium text-gray-800"></span>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center">
+    <div class="bg-white rounded-2xl p-6 flex items-center gap-4 shadow-2xl">
+      <div class="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-gray-700 font-medium">Memproses...</span>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
